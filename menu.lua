@@ -43,7 +43,6 @@ end
 -- PlayerScripts.PlayerModule).  Keep the menu alive on a spawned thread and
 -- return from the loader's thread immediately.
 task.spawn(function()
-warn("[Hex] remote-ui-test")
 -- ------------------------------------------------------------- native HTTP
 -- loadstring("HEXHTTP:<url>") makes the payload fetch the URL with Java's TLS
 -- and hand back a closure whose result is the body.  No HttpService involved:
