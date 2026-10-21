@@ -17,7 +17,7 @@ gui.ResetOnSpawn = false
 gui.IgnoreGuiInset = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.DisplayOrder = 999
-gui.Parent = CoreGui
+Host.Parent(gui, CoreGui)
 
 -- ---------------------------------------------------------------- console
 local consoleGui = Instance.new("ScreenGui")
@@ -26,7 +26,7 @@ consoleGui.ResetOnSpawn = false
 consoleGui.IgnoreGuiInset = false
 consoleGui.DisplayOrder = 1000
 consoleGui.Enabled = false
-consoleGui.Parent = CoreGui
+Host.Parent(consoleGui, CoreGui)
 
 local consoleFrame = Instance.new("ScrollingFrame")
 consoleFrame.Name = "Panel"
