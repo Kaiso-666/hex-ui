@@ -43,6 +43,9 @@ end
 
 local ScreenGui = Instance.new("ScreenGui")
 ScreenGui.Name = "HexMenu"
+-- Identifies the server this menu belongs to.  The bridge uses it to avoid
+-- rebuilding a second menu when both host scripts load for the same place.
+pcall(function() ScreenGui:SetAttribute("HexJob", game.JobId) end)
 ScreenGui.ResetOnSpawn = false
 ScreenGui.IgnoreGuiInset = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
