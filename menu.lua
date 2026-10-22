@@ -4,6 +4,7 @@ local GetService = Host.GetService
 local CoreGui = GetService("CoreGui")
 local Workspace = GetService("Workspace")
 local Players = GetService("Players")
+local PlayerGui = Players.LocalPlayer:WaitForChild("PlayerGui")
 
 local warn = warn or function(...) Host.Log(...) end
 local print = print or function(...) Host.Log(...) end
@@ -95,7 +96,7 @@ end
 local G2L = {};
 
 -- StarterGui.! | Hex - Minimal
-G2L["1"] = Host.New("ScreenGui", CoreGui);
+G2L["1"] = Host.New("ScreenGui", PlayerGui);
 G2L["1"]["IgnoreGuiInset"] = true;
 G2L["1"]["ScreenInsets"] = Enum.ScreenInsets.None;
 G2L["1"]["Name"] = [[! | Hex - Minimal]];
