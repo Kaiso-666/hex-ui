@@ -246,10 +246,28 @@ end
 local MAIN_WIDTH = 640
 local MAIN_HEIGHT = 420
 
+-- The design is a fixed 640x420 panel.  On a phone in portrait the logical
+-- viewport can be narrower than 640, and Roblox may additionally apply a DPI
+-- scale; a raw offset panel then renders wider than the screen, which looks
+-- like random-coloured CoreGui blocks clipped at both edges.  Fit the panel to
+-- the actual ScreenGui size and let UIScale shrink every child (text, icons,
+-- paddings) with it.
+local viewport = ScreenGui.AbsoluteSize
+if viewport.X < 2 or viewport.Y < 2 then
+    local cam = workspace.CurrentCamera
+    viewport = cam and cam.ViewportSize or Vector2.new(MAIN_WIDTH, MAIN_HEIGHT)
+end
+local fitScale = math.clamp(
+    math.min((viewport.X - 24) / MAIN_WIDTH, (viewport.Y - 24) / MAIN_HEIGHT),
+    0.45, 1.0
+)
+local mainW = MAIN_WIDTH * fitScale
+local mainH = MAIN_HEIGHT * fitScale
+
 local MainFrame = create("Frame", {
     Name = "MainFrame",
     Size = UDim2.new(0, MAIN_WIDTH, 0, MAIN_HEIGHT),
-    Position = UDim2.new(0.5, -MAIN_WIDTH / 2, 0.5, -MAIN_HEIGHT / 2),
+    Position = UDim2.new(0.5, -mainW / 2, 0.5, -mainH / 2),
     BackgroundColor3 = THEME.BackgroundDark,
     BorderSizePixel = 0,
     ClipsDescendants = true,
@@ -270,6 +288,17 @@ local MainFrame = create("Frame", {
         Rotation = 135,
     }),
 })
+
+local mainScale = Instance.new("UIScale")
+mainScale.Scale = fitScale
+mainScale.Parent = MainFrame
+
+if Host and type(Host.Debug) == "function" then
+    Host.Debug(string.format(
+        "UI vp=%.0fx%.0f abs=%.0fx%.0f fit=%.3f main=%.0fx%.0f",
+        viewport.X, viewport.Y, ScreenGui.AbsoluteSize.X, ScreenGui.AbsoluteSize.Y,
+        fitScale, mainW, mainH))
+end
 
 local Topbar = create("Frame", {
     Name = "Topbar",
@@ -385,6 +414,10 @@ local MiniBtn = create("TextButton", {
     create("UICorner", { CornerRadius = UDim.new(0, 8) }),
     create("UIStroke", { Color = THEME.AccentPurple, Thickness = 1.2 }),
 })
+
+local miniScale = Instance.new("UIScale")
+miniScale.Scale = fitScale
+miniScale.Parent = MiniBtn
 
 MiniBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
@@ -1574,5 +1607,13 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
                 MiniBtn.Visible = false
             end
         end
+    end
+end)
+
+task.defer(function()
+    task.wait()
+    if Host and type(Host.Debug) == "function" then
+        Host.Debug(string.format("UI layout abs=%s pos=%s scale=%.3f",
+            tostring(MainFrame.AbsoluteSize), tostring(MainFrame.AbsolutePosition), fitScale))
     end
 end)
