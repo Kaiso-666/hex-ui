@@ -1,19 +1,13 @@
-local Host = Host
+--HEXUI_PROTOCOL 1
+local GetService = Host.GetService
 
-local function getService(name)
-    if Host and type(Host.GetService) == "function" then
-        return Host.GetService(name)
-    end
-    return game:GetService(name)
-end
-
-local CoreGui = getService("CoreGui")
-local UIS = getService("UserInputService")
-local Players = getService("Players")
-local TweenService = getService("TweenService")
-local LogService = getService("LogService")
-local ContextActionService = getService("ContextActionService")
-local RunService = getService("RunService")
+local CoreGui = GetService("CoreGui")
+local UIS = GetService("UserInputService")
+local Players = GetService("Players")
+local TweenService = GetService("TweenService")
+local ContextActionService = GetService("ContextActionService")
+local RunService = GetService("RunService")
+local Workspace = GetService("Workspace")
 
 local LocalPlayer = Players.LocalPlayer
 local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
@@ -27,65 +21,21 @@ for _, parent in ipairs({ CoreGui, PlayerGui }) do
     end
 end
 
-_G.HexUIScale = _G.HexUIScale or 1
+local uiScale = 1
 local UI_SCALE_MIN, UI_SCALE_MAX = 0.5, 1.5
 
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "HexV2"
-ScreenGui.ResetOnSpawn = false
-ScreenGui.IgnoreGuiInset = false
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-ScreenGui.DisplayOrder = 999
-
-if Host and type(Host.Parent) == "function" then
-    Host.Parent(ScreenGui, CoreGui)
-else
-    local ok = pcall(function()
-        ScreenGui.Parent = CoreGui
-    end)
-    if not ok then
-        ScreenGui.Parent = PlayerGui
-    end
-end
-
-local ICONS = {
-    Home        = "rbxassetid://10723407389",
-    Console     = "rbxassetid://10734982144",
-    Editor      = "rbxassetid://10709810463",
-    Settings    = "rbxassetid://10734950309",
-    SidebarOpen = "rbxassetid://10709797382",
-    Play        = "rbxassetid://10734923549",
-    Trash       = "rbxassetid://10747362241",
-    Save        = "rbxassetid://10734941499",
-    Clipboard   = "rbxassetid://10709798574",
-    Minimize    = "rbxassetid://10734896206",
-    Close       = "rbxassetid://10747384394",
-}
-
-local THEME = {
-    Base         = Color3.fromRGB(12, 14, 24),
-    Panel        = Color3.fromRGB(18, 20, 34),
-    PanelHi      = Color3.fromRGB(28, 30, 52),
-    Sidebar      = Color3.fromRGB(14, 16, 28),
-    Stroke       = Color3.fromRGB(44, 42, 74),
-    StrokeHi     = Color3.fromRGB(86, 78, 150),
-    Accent       = Color3.fromRGB(140, 92, 255),
-    AccentAlt    = Color3.fromRGB(72, 132, 255),
-    Text         = Color3.fromRGB(240, 243, 255),
-    Sub          = Color3.fromRGB(150, 156, 190),
-    Muted        = Color3.fromRGB(96, 103, 135),
-    Success      = Color3.fromRGB(60, 220, 140),
-    Warning      = Color3.fromRGB(255, 195, 60),
-    Danger       = Color3.fromRGB(255, 85, 95),
-}
-
-local function create(className, properties, children)
-    local inst = Instance.new(className)
-    for prop, val in pairs(properties or {}) do
-        inst[prop] = val
+local function create(className, props, children)
+    local inst = Host.New(className)
+    for prop, val in pairs(props or {}) do
+        if prop ~= "Parent" then
+            inst[prop] = val
+        end
     end
     for _, child in ipairs(children or {}) do
         child.Parent = inst
+    end
+    if props and props.Parent then
+        inst.Parent = props.Parent
     end
     return inst
 end
@@ -106,6 +56,43 @@ local function gradient(c1, c2, rotation)
         Rotation = rotation or 0,
     })
 end
+
+local ScreenGui = create("ScreenGui", {
+    Name = "HexV2",
+    ResetOnSpawn = false,
+    IgnoreGuiInset = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+    DisplayOrder = 999,
+    Parent = CoreGui,
+})
+
+local ICONS = {
+    Home        = "rbxassetid://10723407389",
+    Console     = "rbxassetid://10734982144",
+    Editor      = "rbxassetid://10709810463",
+    Settings    = "rbxassetid://10734950309",
+    SidebarOpen = "rbxassetid://10709797382",
+    Play        = "rbxassetid://10734923549",
+    Trash       = "rbxassetid://10747362241",
+    Minimize    = "rbxassetid://10734896206",
+    Close       = "rbxassetid://10747384394",
+}
+
+local THEME = {
+    Base      = Color3.fromRGB(12, 14, 24),
+    Panel     = Color3.fromRGB(18, 20, 34),
+    PanelHi   = Color3.fromRGB(28, 30, 52),
+    Sidebar   = Color3.fromRGB(14, 16, 28),
+    Stroke    = Color3.fromRGB(44, 42, 74),
+    Accent    = Color3.fromRGB(140, 92, 255),
+    AccentAlt = Color3.fromRGB(72, 132, 255),
+    Text      = Color3.fromRGB(240, 243, 255),
+    Sub       = Color3.fromRGB(150, 156, 190),
+    Muted     = Color3.fromRGB(96, 103, 135),
+    Success   = Color3.fromRGB(60, 220, 140),
+    Warning   = Color3.fromRGB(255, 195, 60),
+    Danger    = Color3.fromRGB(255, 85, 95),
+}
 
 local function drawCube(parent, size, color, thickness)
     local k = size / 24
@@ -160,17 +147,13 @@ local KEYWORDS = {
 local BUILTINS = {
     ["print"] = true, ["warn"] = true, ["error"] = true, ["pairs"] = true,
     ["ipairs"] = true, ["next"] = true, ["tostring"] = true, ["tonumber"] = true,
-    ["type"] = true, ["typeof"] = true, ["pcall"] = true, ["xpcall"] = true,
-    ["select"] = true, ["rawget"] = true, ["rawset"] = true, ["setmetatable"] = true,
-    ["getmetatable"] = true, ["task"] = true, ["math"] = true, ["table"] = true,
-    ["string"] = true, ["os"] = true, ["coroutine"] = true, ["bit32"] = true,
-    ["utf8"] = true, ["debug"] = true, ["game"] = true, ["workspace"] = true,
-    ["script"] = true, ["Instance"] = true, ["Vector3"] = true, ["Vector2"] = true,
-    ["CFrame"] = true, ["Color3"] = true, ["UDim2"] = true, ["UDim"] = true,
-    ["BrickColor"] = true, ["Enum"] = true, ["Ray"] = true, ["TweenInfo"] = true,
-    ["loadstring"] = true, ["wait"] = true, ["spawn"] = true, ["delay"] = true,
-    ["writefile"] = true, ["readfile"] = true, ["getclipboard"] = true, ["setclipboard"] = true,
-    ["identifyexecutor"] = true, ["getgenv"] = true, ["Host"] = true,
+    ["typeof"] = true, ["pcall"] = true, ["xpcall"] = true, ["select"] = true,
+    ["rawget"] = true, ["rawset"] = true, ["setmetatable"] = true, ["getmetatable"] = true,
+    ["task"] = true, ["math"] = true, ["table"] = true, ["string"] = true,
+    ["game"] = true, ["workspace"] = true, ["script"] = true, ["Instance"] = true,
+    ["Vector3"] = true, ["Vector2"] = true, ["CFrame"] = true, ["Color3"] = true,
+    ["UDim2"] = true, ["UDim"] = true, ["Enum"] = true, ["TweenInfo"] = true,
+    ["wait"] = true, ["spawn"] = true, ["delay"] = true,
 }
 
 local SYNTAX_COLORS = {
@@ -184,6 +167,10 @@ local SYNTAX_COLORS = {
     default  = "rgb(230, 235, 248)",
 }
 
+local function span(color, text)
+    return string.format('<font color="%s">%s</font>', color, text)
+end
+
 local function highlightLuau(src)
     local result = {}
     local i = 1
@@ -192,23 +179,14 @@ local function highlightLuau(src)
     while i <= len do
         if src:sub(i, i + 3) == "--[[" then
             local finish = src:find("]]", i + 4, true)
-            if finish then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.comment, escapeXml(src:sub(i, finish + 1))))
-                i = finish + 2
-            else
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.comment, escapeXml(src:sub(i))))
-                break
-            end
+            local stop = finish and finish + 1 or len
+            table.insert(result, span(SYNTAX_COLORS.comment, escapeXml(src:sub(i, stop))))
+            i = stop + 1
         elseif src:sub(i, i + 1) == "--" then
             local finish = src:find("\n", i + 2, true)
-            if finish then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.comment, escapeXml(src:sub(i, finish - 1))))
-                table.insert(result, "\n")
-                i = finish + 1
-            else
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.comment, escapeXml(src:sub(i))))
-                break
-            end
+            local stop = finish and finish - 1 or len
+            table.insert(result, span(SYNTAX_COLORS.comment, escapeXml(src:sub(i, stop))))
+            i = stop + 1
         elseif src:sub(i, i) == '"' or src:sub(i, i) == "'" then
             local quote = src:sub(i, i)
             local j = i + 1
@@ -224,40 +202,35 @@ local function highlightLuau(src)
                 end
                 j = j + 1
             end
-            table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.string, escapeXml(src:sub(i, j))))
+            table.insert(result, span(SYNTAX_COLORS.string, escapeXml(src:sub(i, j))))
             i = j + 1
         elseif src:sub(i, i + 1) == "[[" then
             local finish = src:find("]]", i + 2, true)
-            if finish then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.string, escapeXml(src:sub(i, finish + 1))))
-                i = finish + 2
-            else
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.string, escapeXml(src:sub(i))))
-                break
-            end
+            local stop = finish and finish + 1 or len
+            table.insert(result, span(SYNTAX_COLORS.string, escapeXml(src:sub(i, stop))))
+            i = stop + 1
         elseif src:sub(i):match("^0[xX]%x+") then
-            local match = src:sub(i):match("^0[xX]%x+")
-            table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.number, match))
-            i = i + #match
-        elseif src:sub(i):match("^%d+%.?%d*[eE]?[+-]?%d*") and src:sub(i, i):match("%d") then
-            local match = src:sub(i):match("^%d+%.?%d*[eE]?[+-]?%d*")
-            table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.number, match))
-            i = i + #match
+            local m = src:sub(i):match("^0[xX]%x+")
+            table.insert(result, span(SYNTAX_COLORS.number, m))
+            i = i + #m
+        elseif src:sub(i, i):match("%d") then
+            local m = src:sub(i):match("^%d+%.?%d*")
+            table.insert(result, span(SYNTAX_COLORS.number, m))
+            i = i + #m
         elseif src:sub(i):match("^[%a_][%w_]*") then
             local word = src:sub(i):match("^[%a_][%w_]*")
             if word == "true" or word == "false" or word == "nil" then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.boolean, word))
+                table.insert(result, span(SYNTAX_COLORS.boolean, word))
             elseif KEYWORDS[word] then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.keyword, word))
+                table.insert(result, span(SYNTAX_COLORS.keyword, word))
             elseif BUILTINS[word] then
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.builtin, word))
+                table.insert(result, span(SYNTAX_COLORS.builtin, word))
             else
-                table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.default, escapeXml(word)))
+                table.insert(result, span(SYNTAX_COLORS.default, escapeXml(word)))
             end
             i = i + #word
         elseif src:sub(i, i):match("[%+%-%*%/%%%^#=<>&|~:;,%.%(%)%{%}%[%]]") then
-            local sym = src:sub(i, i)
-            table.insert(result, string.format('<font color="%s">%s</font>', SYNTAX_COLORS.operator, escapeXml(sym)))
+            table.insert(result, span(SYNTAX_COLORS.operator, escapeXml(src:sub(i, i))))
             i = i + 1
         else
             table.insert(result, escapeXml(src:sub(i, i)))
@@ -286,13 +259,9 @@ local MainFrame = create("Frame", {
     Parent = ScreenGui,
 }, {
     create("UICorner", { CornerRadius = UDim.new(0, 16) }),
-    create("UIStroke", {
-        Color = THEME.Stroke,
-        Thickness = 1,
-        ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
-    }),
+    create("UIStroke", { Color = THEME.Stroke, Thickness = 1, ApplyStrokeMode = Enum.ApplyStrokeMode.Border }),
     gradient(Color3.fromRGB(16, 18, 34), Color3.fromRGB(10, 12, 22), 135),
-    create("UIScale", { Name = "HexScale", Scale = _G.HexUIScale }),
+    create("UIScale", { Name = "HexScale", Scale = uiScale }),
 })
 
 local Topbar = create("Frame", {
@@ -313,7 +282,7 @@ local Topbar = create("Frame", {
     }),
 })
 
-local BrandCube = drawCube(create("Frame", {
+drawCube(create("Frame", {
     Name = "Brand",
     Size = UDim2.fromOffset(26, 26),
     Position = UDim2.new(0, 14, 0.5, -13),
@@ -362,7 +331,7 @@ local WindowControls = create("Frame", {
 })
 
 local function makeControl(name, icon, xOffset)
-    local btn = create("ImageButton", {
+    return create("ImageButton", {
         Name = name,
         Size = UDim2.fromOffset(26, 26),
         Position = UDim2.new(0, xOffset, 0.5, -13),
@@ -376,7 +345,6 @@ local function makeControl(name, icon, xOffset)
     }, {
         create("UICorner", { CornerRadius = UDim.new(1, 0) }),
     })
-    return btn
 end
 
 local MinimizeBtn = makeControl("MinimizeBtn", ICONS.Minimize, 6)
@@ -396,7 +364,7 @@ local MiniBtn = create("TextButton", {
     create("UICorner", { CornerRadius = UDim.new(1, 0) }),
     create("UIStroke", { Color = THEME.Text, Thickness = 1, Transparency = 0.8 }),
     gradient(THEME.Accent, THEME.AccentAlt, 135),
-    create("UIScale", { Name = "HexScale", Scale = _G.HexUIScale }),
+    create("UIScale", { Name = "HexScale", Scale = uiScale }),
 })
 drawCube(MiniBtn, 24, Color3.new(1, 1, 1), 2)
 
@@ -411,7 +379,6 @@ end)
 MinimizeBtn.MouseLeave:Connect(function()
     tween(MinimizeBtn, 0.2, { BackgroundTransparency = 0.6, ImageColor3 = THEME.Sub })
 end)
-
 CloseBtn.MouseEnter:Connect(function()
     tween(CloseBtn, 0.2, { BackgroundColor3 = THEME.Danger, BackgroundTransparency = 0.1, ImageColor3 = Color3.new(1, 1, 1) })
 end)
@@ -422,14 +389,20 @@ end)
 local isMinimized = false
 MinimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
-    local h = isMinimized and TOPBAR_HEIGHT or MAIN_HEIGHT
-    tween(MainFrame, 0.3, { Size = UDim2.new(0, MAIN_WIDTH, 0, h) })
+    tween(MainFrame, 0.3, { Size = UDim2.new(0, MAIN_WIDTH, 0, isMinimized and TOPBAR_HEIGHT or MAIN_HEIGHT) })
 end)
 
-CloseBtn.MouseButton1Click:Connect(function()
+local function hideWindow()
     MainFrame.Visible = false
     MiniBtn.Visible = true
-end)
+end
+
+local function showWindow()
+    MainFrame.Visible = true
+    MiniBtn.Visible = false
+end
+
+CloseBtn.MouseButton1Click:Connect(hideWindow)
 
 MiniBtn.MouseEnter:Connect(function()
     tween(MiniBtn, 0.2, { Size = UDim2.fromOffset(52, 52), Position = UDim2.new(0, 14, 0.5, -26) })
@@ -452,7 +425,7 @@ local function beginDrag(input)
     isDragging = true
     dragStartPos = input.Position
     startFramePos = MainFrame.Position
-    local cam = workspace.CurrentCamera
+    local cam = Workspace.CurrentCamera
     dragStartCam = cam and cam.CFrame or nil
 
     ContextActionService:BindActionAtPriority(
@@ -466,7 +439,7 @@ local function beginDrag(input)
     )
 
     RunService:BindToRenderStep(DRAG_CAM_PIN, Enum.RenderPriority.Camera.Value + 1, function()
-        local c = workspace.CurrentCamera
+        local c = Workspace.CurrentCamera
         if isDragging and c and dragStartCam then
             c.CFrame = dragStartCam
         end
@@ -495,8 +468,7 @@ end)
 
 UIS.InputChanged:Connect(function(input)
     if isDragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local scale = _G.HexUIScale or 1
-        local delta = (input.Position - dragStartPos) / scale
+        local delta = (input.Position - dragStartPos) / uiScale
         MainFrame.Position = UDim2.new(
             startFramePos.X.Scale,
             startFramePos.X.Offset + delta.X,
@@ -738,14 +710,12 @@ for _, tab in ipairs(TabData) do
             tween(TabButton.Icon, 0.2, { ImageColor3 = THEME.Text })
         end
     end)
-
     TabButton.MouseLeave:Connect(function()
         if CurrentTabId ~= tab.Id then
             tween(TabButton, 0.2, { BackgroundTransparency = 1 })
             tween(TabButton.Icon, 0.2, { ImageColor3 = THEME.Sub })
         end
     end)
-
     TabButton.MouseButton1Click:Connect(function()
         switchTab(tab.Id)
     end)
@@ -769,10 +739,10 @@ local ConsolePage = createTabPage("Console", false)
 local EditorPage = createTabPage("Editor", false)
 local SettingsPage = createTabPage("Settings", false)
 
-local function card(props, parent)
-    local frame = create("Frame", {
-        Size = props.Size,
-        Position = props.Position,
+local function card(size, position, parent)
+    return create("Frame", {
+        Size = size,
+        Position = position,
         BackgroundColor3 = THEME.Panel,
         BorderSizePixel = 0,
         Parent = parent,
@@ -781,12 +751,11 @@ local function card(props, parent)
         create("UIStroke", { Color = THEME.Stroke, Thickness = 1 }),
         gradient(Color3.fromRGB(24, 26, 46), Color3.fromRGB(16, 18, 32), 90),
     })
-    return frame
 end
 
-local ProfileCard = card({ Size = UDim2.new(1, 0, 0, 84), Position = UDim2.new(0, 0, 0, 0) }, HomePage)
-ProfileCard.Name = "ProfileCard"
+local ProfileCard = card(UDim2.new(1, 0, 0, 84), UDim2.new(0, 0, 0, 0), HomePage)
 
+local safeUserId = (LocalPlayer.UserId and LocalPlayer.UserId > 0) and LocalPlayer.UserId or 1
 local AvatarRing = create("Frame", {
     Name = "AvatarRing",
     Size = UDim2.fromOffset(58, 58),
@@ -799,7 +768,6 @@ local AvatarRing = create("Frame", {
     gradient(THEME.Accent, THEME.AccentAlt, 135),
 })
 
-local safeUserId = (LocalPlayer.UserId and LocalPlayer.UserId > 0) and LocalPlayer.UserId or 1
 local AvatarImage = create("ImageLabel", {
     Name = "AvatarImage",
     Size = UDim2.new(1, -4, 1, -4),
@@ -850,7 +818,7 @@ create("TextLabel", {
     Parent = ProfileCard,
 })
 
-task.spawn(function()
+Host.Spawn(function()
     pcall(function()
         local content, isReady = Players:GetUserThumbnailAsync(
             safeUserId,
@@ -863,8 +831,7 @@ task.spawn(function()
     end)
 end)
 
-local QuickCard = card({ Size = UDim2.new(1, 0, 1, -96), Position = UDim2.new(0, 0, 0, 96) }, HomePage)
-QuickCard.Name = "QuickCard"
+local QuickCard = card(UDim2.new(1, 0, 1, -96), UDim2.new(0, 0, 0, 96), HomePage)
 
 create("TextLabel", {
     Name = "SectionHeader",
@@ -893,8 +860,6 @@ local SlidersContainer = create("Frame", {
 })
 
 local function createSlider(title, minVal, maxVal, defaultVal, suffix, onValueChanged, parent)
-    local currentValue = defaultVal
-
     local SliderFrame = create("Frame", {
         Name = title .. "Slider",
         Size = UDim2.new(1, 0, 0, 54),
@@ -972,13 +937,12 @@ local function createSlider(title, minVal, maxVal, defaultVal, suffix, onValueCh
     local isSliding = false
 
     local function apply(ratio)
-        local calcVal = minVal + ratio * (maxVal - minVal)
-        currentValue = math.round(calcVal)
-        ValueLabel.Text = tostring(currentValue) .. (suffix or "")
+        local value = math.round(minVal + ratio * (maxVal - minVal))
+        ValueLabel.Text = tostring(value) .. (suffix or "")
         Fill.Size = UDim2.new(ratio, 0, 1, 0)
         Knob.Position = UDim2.new(ratio, -7, 0.5, -7)
         if onValueChanged then
-            pcall(onValueChanged, currentValue)
+            pcall(onValueChanged, value)
         end
     end
 
@@ -986,8 +950,7 @@ local function createSlider(title, minVal, maxVal, defaultVal, suffix, onValueCh
         local trackAbsPos = Track.AbsolutePosition.X
         local trackAbsSize = Track.AbsoluteSize.X
         if trackAbsSize <= 0 then return end
-        local ratio = math.clamp((input.Position.X - trackAbsPos) / trackAbsSize, 0, 1)
-        apply(ratio)
+        apply(math.clamp((input.Position.X - trackAbsPos) / trackAbsSize, 0, 1))
     end
 
     SliderFrame.InputBegan:Connect(function(input)
@@ -1009,58 +972,32 @@ local function createSlider(title, minVal, maxVal, defaultVal, suffix, onValueCh
         end
     end)
 
-    return {
-        SetValue = function(newVal)
-            local ratio = math.clamp((newVal - minVal) / (maxVal - minVal), 0, 1)
-            apply(ratio)
-        end,
-    }
+    return SliderFrame
 end
 
-local hackSettings = {
-    WalkSpeed = 16,
-    JumpPower = 50,
-}
-
-local function applyCharacterMods(character)
-    local humanoid = character:WaitForChild("Humanoid", 5)
-    if humanoid then
-        humanoid.WalkSpeed = hackSettings.WalkSpeed
-        humanoid.UseJumpPower = true
-        humanoid.JumpPower = hackSettings.JumpPower
-    end
+local function getHumanoid()
+    local char = LocalPlayer.Character
+    return char and char:FindFirstChildOfClass("Humanoid")
 end
 
-if LocalPlayer.Character then
-    applyCharacterMods(LocalPlayer.Character)
-end
-LocalPlayer.CharacterAdded:Connect(applyCharacterMods)
-
-createSlider("Gravity", 0, 400, workspace.Gravity or 196.2, " u", function(val)
-    workspace.Gravity = val
-end)
+createSlider("Gravity", 0, 400, Workspace.Gravity, " u", function(val)
+    Workspace.Gravity = val
+end, SlidersContainer)
 
 createSlider("WalkSpeed", 0, 250, 16, " spd", function(val)
-    hackSettings.WalkSpeed = val
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
-    if hum then
-        hum.WalkSpeed = val
-    end
-end)
+    local hum = getHumanoid()
+    if hum then hum.WalkSpeed = val end
+end, SlidersContainer)
 
 createSlider("Jump Power", 0, 300, 50, " pwr", function(val)
-    hackSettings.JumpPower = val
-    local char = LocalPlayer.Character
-    local hum = char and char:FindFirstChildOfClass("Humanoid")
+    local hum = getHumanoid()
     if hum then
         hum.UseJumpPower = true
         hum.JumpPower = val
     end
-end)
+end, SlidersContainer)
 
-local ConsoleHeader = card({ Size = UDim2.new(1, 0, 0, 40), Position = UDim2.new(0, 0, 0, 0) }, ConsolePage)
-ConsoleHeader.Name = "ConsoleHeader"
+local ConsoleHeader = card(UDim2.new(1, 0, 0, 40), UDim2.new(0, 0, 0, 0), ConsolePage)
 
 create("TextLabel", {
     Name = "HeaderTitle",
@@ -1157,28 +1094,15 @@ local ConsoleScroll = create("ScrollingFrame", {
 })
 
 local consoleLogsCount = 0
+local MAX_CONSOLE_LINES = 200
 
-local function addConsoleLog(message, messageType)
+local function addConsoleLog(message, color)
     consoleLogsCount = consoleLogsCount + 1
     ConsoleCountBadge.Text = tostring(consoleLogsCount) .. " logs"
 
-    local timeStamp = os.date("%H:%M:%S")
-    local typeColor = THEME.Text
-    local typeTag = "[INFO]"
-
-    if messageType == Enum.MessageType.MessageWarning then
-        typeColor = THEME.Warning
-        typeTag = "[WARN]"
-    elseif messageType == Enum.MessageType.MessageError then
-        typeColor = THEME.Danger
-        typeTag = "[ERR]"
-    elseif messageType == Enum.MessageType.MessageInfo then
-        typeColor = THEME.AccentAlt
-        typeTag = "[INFO]"
-    end
-
-    local cleanMsg = escapeXml(tostring(message))
-    local colorRgb = string.format("rgb(%d,%d,%d)", math.round(typeColor.R * 255), math.round(typeColor.G * 255), math.round(typeColor.B * 255))
+    local stamp = string.format("%.1fs", Host.Clock())
+    local rgb = color or THEME.Text
+    local colorRgb = string.format("rgb(%d,%d,%d)", math.round(rgb.R * 255), math.round(rgb.G * 255), math.round(rgb.B * 255))
 
     create("TextLabel", {
         Name = "LogEntry",
@@ -1186,7 +1110,7 @@ local function addConsoleLog(message, messageType)
         AutomaticSize = Enum.AutomaticSize.Y,
         BackgroundTransparency = 1,
         RichText = true,
-        Text = string.format('<font color="rgb(110,120,150)">[%s]</font> <font color="%s"><b>%s</b> %s</font>', timeStamp, colorRgb, typeTag, cleanMsg),
+        Text = string.format('<font color="rgb(110,120,150)">[%s]</font> <font color="%s">%s</font>', stamp, colorRgb, escapeXml(tostring(message))),
         Font = Enum.Font.Code,
         TextSize = 12,
         TextWrapped = true,
@@ -1195,7 +1119,7 @@ local function addConsoleLog(message, messageType)
         Parent = ConsoleScroll,
     })
 
-    if consoleLogsCount > 200 then
+    if consoleLogsCount > MAX_CONSOLE_LINES then
         for _, child in ipairs(ConsoleScroll:GetChildren()) do
             if child:IsA("TextLabel") then
                 child:Destroy()
@@ -1217,27 +1141,11 @@ ClearConsoleBtn.MouseButton1Click:Connect(function()
     ConsoleCountBadge.Text = "0 logs"
 end)
 
-if Host and type(Host.OnLog) == "function" then
-    Host.OnLog(function(line)
-        addConsoleLog(line, Enum.MessageType.MessageOutput)
-    end)
-end
+Host.OnLog(function(line)
+    addConsoleLog(line, THEME.AccentAlt)
+end)
 
-if LogService and LogService.MessageOut then
-    LogService.MessageOut:Connect(function(message, messageType)
-        addConsoleLog(message, messageType)
-    end)
-
-    pcall(function()
-        local history = LogService:GetLogHistory()
-        for _, log in ipairs(history) do
-            addConsoleLog(log.message, log.messageType)
-        end
-    end)
-end
-
-local EditorCard = card({ Size = UDim2.new(1, 0, 1, -46), Position = UDim2.new(0, 0, 0, 0) }, EditorPage)
-EditorCard.Name = "EditorCard"
+local EditorCard = card(UDim2.new(1, 0, 1, -46), UDim2.new(0, 0, 0, 0), EditorPage)
 EditorCard.ClipsDescendants = true
 
 local GutterFrame = create("Frame", {
@@ -1288,7 +1196,7 @@ local CodeScroll = create("ScrollingFrame", {
 
 local HighlightLabel = create("TextLabel", {
     Name = "HighlightLabel",
-    Size = UDim2.new(1, -16, 1, -16),
+    Size = UDim2.new(0, 880, 0, 200),
     Position = UDim2.new(0, 8, 0, 8),
     BackgroundTransparency = 1,
     RichText = true,
@@ -1305,7 +1213,7 @@ local HighlightLabel = create("TextLabel", {
 
 local EditorTextBox = create("TextBox", {
     Name = "EditorTextBox",
-    Size = UDim2.new(1, -16, 1, -16),
+    Size = UDim2.new(0, 880, 0, 200),
     Position = UDim2.new(0, 8, 0, 8),
     BackgroundTransparency = 1,
     PlaceholderText = 'loadstring(game:HttpGet("https://..."))()',
@@ -1326,10 +1234,10 @@ local EditorTextBox = create("TextBox", {
 
 local function syncEditor()
     local text = EditorTextBox.Text
-    local _, lineCount = text:gsub("\n", "\n")
-    lineCount = lineCount + 1
+    local _, newlines = text:gsub("\n", "\n")
+    local lineCount = newlines + 1
 
-    local nums = table.create(lineCount)
+    local nums = {}
     for l = 1, lineCount do
         nums[l] = tostring(l)
     end
@@ -1350,7 +1258,8 @@ local highlightPending = false
 EditorTextBox:GetPropertyChangedSignal("Text"):Connect(function()
     if highlightPending then return end
     highlightPending = true
-    task.defer(function()
+    Host.Spawn(function()
+        Host.Wait(0.05)
         highlightPending = false
         syncEditor()
     end)
@@ -1376,7 +1285,7 @@ local EditorActionBar = create("Frame", {
 local function createEditorButton(name, text, icon, isPrimary, order, onClick)
     local Btn = create("TextButton", {
         Name = name .. "Btn",
-        Size = UDim2.new(0.25, -6, 1, 0),
+        Size = UDim2.new(0.5, -4, 1, 0),
         BackgroundColor3 = isPrimary and THEME.Accent or THEME.PanelHi,
         BackgroundTransparency = isPrimary and 0 or 0.4,
         BorderSizePixel = 0,
@@ -1427,42 +1336,26 @@ local function createEditorButton(name, text, icon, isPrimary, order, onClick)
     Btn.MouseLeave:Connect(function()
         tween(Btn, 0.2, { BackgroundTransparency = isPrimary and 0 or 0.4 })
     end)
-
     if onClick then
         Btn.MouseButton1Click:Connect(onClick)
     end
-
     return Btn
 end
 
-_G.HexSavedScript = _G.HexSavedScript or ""
+local lastExecuteClock = -1
+local function executeCode(src, label)
+    local now = Host.Clock()
+    if lastExecuteClock >= 0 and now - lastExecuteClock < 0.5 then return end
+    lastExecuteClock = now
 
-local lastExecuteTime = 0
-local function executeCode(src, tag)
-    local now = os.clock()
-    if now - lastExecuteTime < 0.5 then return end
-    lastExecuteTime = now
-
-    if type(src) ~= "string" or #src == 0 or src:gsub("%s+", "") == "" then
+    if type(src) ~= "string" or src:gsub("%s+", "") == "" then
         return
     end
 
-    task.spawn(function()
-        if Host and type(Host.Execute) == "function" then
-            local ok, err = Host.Execute(src, tag or "editor")
-            if not ok then
-                addConsoleLog("error: " .. tostring(err), Enum.MessageType.MessageError)
-            end
-        else
-            local fn, parseErr = loadstring(src)
-            if not fn then
-                addConsoleLog("syntax error: " .. tostring(parseErr), Enum.MessageType.MessageError)
-                return
-            end
-            local ok, runErr = pcall(fn)
-            if not ok then
-                addConsoleLog("runtime error: " .. tostring(runErr), Enum.MessageType.MessageError)
-            end
+    Host.Spawn(function()
+        local ok, err = pcall(Host.Execute, src, label or "editor")
+        if not ok then
+            addConsoleLog("error: " .. tostring(err), THEME.Danger)
         end
     end)
 end
@@ -1476,37 +1369,7 @@ createEditorButton("Clear", "Clear", ICONS.Trash, false, 2, function()
     syncEditor()
 end)
 
-createEditorButton("Save", "Save", ICONS.Save, false, 3, function()
-    local code = EditorTextBox.Text
-    if writefile then
-        pcall(writefile, "Hex_Script_" .. os.time() .. ".luau", code)
-    elseif setclipboard then
-        setclipboard(code)
-        _G.HexSavedScript = code
-    else
-        _G.HexSavedScript = code
-    end
-end)
-
-createEditorButton("ExecClipboard", "Run Clipboard", ICONS.Clipboard, false, 4, function()
-    local clipText = ""
-    if getclipboard then
-        local success, res = pcall(getclipboard)
-        if success and res then
-            clipText = res
-        end
-    end
-
-    if clipText == "" and _G.HexSavedScript and _G.HexSavedScript ~= "" then
-        clipText = _G.HexSavedScript
-    end
-
-    if clipText ~= "" and clipText:gsub("%s+", "") ~= "" then
-        executeCode(clipText, "clipboard")
-    end
-end)
-
-local SettingsCard = card({ Size = UDim2.new(1, 0, 0, 150), Position = UDim2.new(0, 0, 0, 0) }, SettingsPage)
+local SettingsCard = card(UDim2.new(1, 0, 0, 150), UDim2.new(0, 0, 0, 0), SettingsPage)
 SettingsCard.Name = "InterfaceCard"
 
 create("TextLabel", {
@@ -1535,17 +1398,15 @@ local SettingsSliders = create("Frame", {
     }),
 })
 
-createSlider("UI Scale", 50, 150, math.round(_G.HexUIScale * 100), "%", function(val)
-    local scale = math.clamp(val / 100, UI_SCALE_MIN, UI_SCALE_MAX)
-    _G.HexUIScale = scale
+createSlider("UI Scale", 50, 150, math.round(uiScale * 100), "%", function(val)
+    uiScale = math.clamp(val / 100, UI_SCALE_MIN, UI_SCALE_MAX)
     local mainScale = MainFrame:FindFirstChild("HexScale")
-    if mainScale then mainScale.Scale = scale end
+    if mainScale then mainScale.Scale = uiScale end
     local miniScale = MiniBtn:FindFirstChild("HexScale")
-    if miniScale then miniScale.Scale = scale end
+    if miniScale then miniScale.Scale = uiScale end
 end, SettingsSliders)
 
-local AboutCard = card({ Size = UDim2.new(1, 0, 1, -162), Position = UDim2.new(0, 0, 0, 162) }, SettingsPage)
-AboutCard.Name = "AboutCard"
+local AboutCard = card(UDim2.new(1, 0, 1, -162), UDim2.new(0, 0, 0, 162), SettingsPage)
 
 create("TextLabel", {
     Name = "AboutTitle",
@@ -1565,7 +1426,7 @@ create("TextLabel", {
     Size = UDim2.new(1, -32, 0, 40),
     Position = UDim2.new(0, 16, 0, 40),
     BackgroundTransparency = 1,
-    Text = "Press RightShift, RightControl or Insert to show or hide the window. Drag the top bar to move it.",
+    Text = "Drag the top bar to move the window. The cube button toggles it.",
     TextColor3 = THEME.Sub,
     Font = Enum.Font.Gotham,
     TextSize = 12,
@@ -1579,11 +1440,11 @@ UIS.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     if input.KeyCode == Enum.KeyCode.RightShift or input.KeyCode == Enum.KeyCode.RightControl or input.KeyCode == Enum.KeyCode.Insert then
         if MainFrame.Visible then
-            MainFrame.Visible = false
-            MiniBtn.Visible = true
+            hideWindow()
         else
-            MainFrame.Visible = true
-            MiniBtn.Visible = false
+            showWindow()
         end
     end
 end)
+
+Host.Log("Hex V2 loaded")
