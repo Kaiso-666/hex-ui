@@ -1,4 +1,4 @@
--- HEXUI_PROTOCOL 1
+-- HEXUI_PROTOCOL 2
 local Host = Host
 
 local function getService(name)
