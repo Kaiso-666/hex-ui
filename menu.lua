@@ -421,8 +421,24 @@ local miniScale = Instance.new("UIScale")
 miniScale.Scale = fitScale
 miniScale.Parent = MiniBtn
 
+local function readViewport()
+    -- LayerCollector.AbsoluteSize can lag a rotation; the full-screen probe is
+    -- a normal GuiObject, so its AbsoluteSize has already been through layout
+    -- when its change signal fires.  Camera is only a zero-size fallback.
+    local probe = ScreenGui:FindFirstChild("HexLayoutProbe")
+    local vp = probe and probe.AbsoluteSize
+    if not vp or vp.X < 2 or vp.Y < 2 then
+        local cam = workspace.CurrentCamera
+        vp = cam and cam.ViewportSize
+    end
+    if not vp or vp.X < 2 or vp.Y < 2 then
+        vp = ScreenGui.AbsoluteSize
+    end
+    return vp
+end
+
 local function applyFit()
-    local vp = ScreenGui.AbsoluteSize
+    local vp = readViewport()
     if vp.X < 2 or vp.Y < 2 then
         return
     end
@@ -432,6 +448,9 @@ local function applyFit()
     )
     mainScale.Scale = fitScale
     miniScale.Scale = fitScale
+    if Host and type(Host.Debug) == "function" then
+        Host.Debug(string.format("UI fit vp=%s scale=%.3f", tostring(vp), fitScale))
+    end
 end
 
 -- ScreenGui is a LayerCollector; its AbsoluteSize changed signal is not a
