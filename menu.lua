@@ -1,3 +1,4 @@
+-- HEXUI_PROTOCOL 1
 local Host = Host
 
 local function getService(name)
@@ -7,19 +8,37 @@ local function getService(name)
     return game:GetService(name)
 end
 
-local CoreGui = getService("CoreGui")
 local UIS = getService("UserInputService")
 local TextService = getService("TextService")
 local Players = getService("Players")
 local TweenService = getService("TweenService")
-local LogService = getService("LogService")
 
 local LocalPlayer = Players.LocalPlayer
-local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+local PlayerGui = LocalPlayer and LocalPlayer:FindFirstChild("PlayerGui") or nil
 
-local OldUI = CoreGui:FindFirstChild("HexMenu") or PlayerGui:FindFirstChild("HexMenu")
-if OldUI then
-    OldUI:Destroy()
+-- CoreGui exists on a CoreScript host but is not writable from the per-place
+-- PlayerScripts bootstrap.  Host.GuiParent resolves the right container; the
+-- raw getService call is only a compatibility fallback for an older bridge.
+local CoreGui = nil
+if Host and type(Host.GuiParent) == "function" then
+    CoreGui = Host.GuiParent()
+end
+if CoreGui == nil then
+    pcall(function() CoreGui = game:GetService("CoreGui") end)
+end
+if PlayerGui == nil and LocalPlayer ~= nil then
+    pcall(function() PlayerGui = LocalPlayer:WaitForChild("PlayerGui", 5) end)
+end
+
+for _, name in ipairs({ "HexMenu", "HexConsole" }) do
+    if CoreGui then
+        local old = CoreGui:FindFirstChild(name)
+        if old then old:Destroy() end
+    end
+    if PlayerGui then
+        local old = PlayerGui:FindFirstChild(name)
+        if old then old:Destroy() end
+    end
 end
 
 local ScreenGui = Instance.new("ScreenGui")
@@ -32,10 +51,10 @@ ScreenGui.DisplayOrder = 999
 if Host and type(Host.Parent) == "function" then
     Host.Parent(ScreenGui, CoreGui)
 else
-    local ok = pcall(function()
+    local ok = CoreGui ~= nil and pcall(function()
         ScreenGui.Parent = CoreGui
     end)
-    if not ok then
+    if not ok and PlayerGui then
         ScreenGui.Parent = PlayerGui
     end
 end
@@ -750,7 +769,9 @@ local AvatarFrame = create("Frame", {
     create("UIStroke", { Color = THEME.AccentPurple, Thickness = 1.5 }),
 })
 
-local safeUserId = (LocalPlayer.UserId and LocalPlayer.UserId > 0) and LocalPlayer.UserId or 1
+local safeUserId = (LocalPlayer and LocalPlayer.UserId and LocalPlayer.UserId > 0) and LocalPlayer.UserId or 1
+local safeName = LocalPlayer and tostring(LocalPlayer.Name) or "Player"
+local safeDisplay = LocalPlayer and tostring(LocalPlayer.DisplayName) or safeName
 local AvatarImage = create("ImageLabel", {
     Name = "AvatarImage",
     Size = UDim2.new(1, 0, 1, 0),
@@ -779,7 +800,7 @@ create("TextLabel", {
     Size = UDim2.new(1, -85, 0, 24),
     Position = UDim2.new(0, 80, 0, 16),
     BackgroundTransparency = 1,
-    Text = "Hello, " .. LocalPlayer.Name,
+    Text = "Hello, " .. safeName,
     TextColor3 = THEME.TextPrimary,
     Font = Enum.Font.GothamBold,
     TextSize = 18,
@@ -792,7 +813,7 @@ create("TextLabel", {
     Size = UDim2.new(1, -85, 0, 18),
     Position = UDim2.new(0, 80, 0, 42),
     BackgroundTransparency = 1,
-    Text = "Display: " .. LocalPlayer.DisplayName .. "  •  Hex Ready",
+    Text = "Display: " .. safeDisplay .. "  •  Hex Ready",
     TextColor3 = THEME.TextSecondary,
     Font = Enum.Font.Gotham,
     TextSize = 12,
@@ -998,10 +1019,12 @@ local function applyCharacterMods(character)
     end
 end
 
-if LocalPlayer.Character then
+if LocalPlayer and LocalPlayer.Character then
     applyCharacterMods(LocalPlayer.Character)
 end
-LocalPlayer.CharacterAdded:Connect(applyCharacterMods)
+if LocalPlayer then
+    LocalPlayer.CharacterAdded:Connect(applyCharacterMods)
+end
 
 createSlider("Gravity", 0, 400, workspace.Gravity or 196.2, " u", function(val)
     hackSettings.Gravity = val
@@ -1010,7 +1033,7 @@ end)
 
 createSlider("WalkSpeed", 0, 250, 16, " spd", function(val)
     hackSettings.WalkSpeed = val
-    local char = LocalPlayer.Character
+    local char = LocalPlayer and LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then
@@ -1021,7 +1044,7 @@ end)
 
 createSlider("Jump Power", 0, 300, 50, " pwr", function(val)
     hackSettings.JumpPower = val
-    local char = LocalPlayer.Character
+    local char = LocalPlayer and LocalPlayer.Character
     if char then
         local hum = char:FindFirstChildOfClass("Humanoid")
         if hum then
@@ -1199,22 +1222,12 @@ ClearConsoleBtn.MouseButton1Click:Connect(function()
     ConsoleCountBadge.Text = "0 logs"
 end)
 
+-- The private bridge already forwards LogService.MessageOut through
+-- Host.OnLog.  Connecting to LogService here as well duplicated every console
+-- line; one sink is enough.
 if Host and type(Host.OnLog) == "function" then
     Host.OnLog(function(line)
         addConsoleLog(line, Enum.MessageType.MessageOutput)
-    end)
-end
-
-if LogService and LogService.MessageOut then
-    LogService.MessageOut:Connect(function(message, messageType)
-        addConsoleLog(message, messageType)
-    end)
-
-    pcall(function()
-        local history = LogService:GetLogHistory()
-        for _, log in ipairs(history) do
-            addConsoleLog(log.message, log.messageType)
-        end
     end)
 end
 
