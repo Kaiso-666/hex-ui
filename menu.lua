@@ -1,4 +1,5 @@
 -- HEXUI_PROTOCOL 2
+-- HEXUI_LAYOUT 2
 local Host = Host
 
 local function getService(name)
@@ -418,6 +419,28 @@ local MiniBtn = create("TextButton", {
 local miniScale = Instance.new("UIScale")
 miniScale.Scale = fitScale
 miniScale.Parent = MiniBtn
+
+local function applyFit()
+    local vp = ScreenGui.AbsoluteSize
+    if vp.X < 2 or vp.Y < 2 then
+        return
+    end
+    fitScale = math.clamp(
+        math.min((vp.X - 24) / MAIN_WIDTH, (vp.Y - 24) / MAIN_HEIGHT),
+        0.45, 1.0
+    )
+    mainScale.Scale = fitScale
+    miniScale.Scale = fitScale
+    MainFrame.Position = UDim2.new(
+        0.5, -(MAIN_WIDTH * fitScale) / 2,
+        0.5, -(MAIN_HEIGHT * fitScale) / 2
+    )
+end
+
+applyFit()
+pcall(function()
+    ScreenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyFit)
+end)
 
 MiniBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
