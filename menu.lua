@@ -1,5 +1,5 @@
 -- HEXUI_PROTOCOL 2
--- HEXUI_LAYOUT 2
+-- HEXUI_LAYOUT 3
 local Host = Host
 
 local function getService(name)
@@ -268,7 +268,8 @@ local mainH = MAIN_HEIGHT * fitScale
 local MainFrame = create("Frame", {
     Name = "MainFrame",
     Size = UDim2.new(0, MAIN_WIDTH, 0, MAIN_HEIGHT),
-    Position = UDim2.new(0.5, -mainW / 2, 0.5, -mainH / 2),
+    AnchorPoint = Vector2.new(0.5, 0.5),
+    Position = UDim2.fromScale(0.5, 0.5),
     BackgroundColor3 = THEME.BackgroundDark,
     BorderSizePixel = 0,
     ClipsDescendants = true,
@@ -431,16 +432,61 @@ local function applyFit()
     )
     mainScale.Scale = fitScale
     miniScale.Scale = fitScale
-    MainFrame.Position = UDim2.new(
-        0.5, -(MAIN_WIDTH * fitScale) / 2,
-        0.5, -(MAIN_HEIGHT * fitScale) / 2
-    )
 end
 
-applyFit()
+-- ScreenGui is a LayerCollector; its AbsoluteSize changed signal is not a
+-- reliable orientation notification on Android.  A full-screen GuiObject child
+-- does emit the normal layout change, and Camera.ViewportSize fires before the
+-- layout pass, so defer the actual read by one frame.
+local fitPending = false
+local function scheduleFit()
+    if fitPending then
+        return
+    end
+    fitPending = true
+    task.defer(function()
+        fitPending = false
+        applyFit()
+    end)
+end
+
+local layoutProbe = Instance.new("Frame")
+layoutProbe.Name = "HexLayoutProbe"
+layoutProbe.BackgroundTransparency = 1
+layoutProbe.BorderSizePixel = 0
+layoutProbe.Size = UDim2.fromScale(1, 1)
+layoutProbe.Position = UDim2.fromScale(0, 0)
+layoutProbe.ZIndex = 0
+layoutProbe.Active = false
+layoutProbe.Parent = ScreenGui
+
 pcall(function()
-    ScreenGui:GetPropertyChangedSignal("AbsoluteSize"):Connect(applyFit)
+    layoutProbe:GetPropertyChangedSignal("AbsoluteSize"):Connect(scheduleFit)
 end)
+if PlayerGui then
+    pcall(function()
+        PlayerGui:GetPropertyChangedSignal("CurrentScreenOrientation"):Connect(scheduleFit)
+    end)
+end
+
+local cameraConn = nil
+local function bindCamera()
+    if cameraConn then
+        cameraConn:Disconnect()
+        cameraConn = nil
+    end
+    local cam = workspace.CurrentCamera
+    if cam then
+        cameraConn = cam:GetPropertyChangedSignal("ViewportSize"):Connect(scheduleFit)
+        scheduleFit()
+    end
+end
+pcall(function()
+    workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(bindCamera)
+end)
+bindCamera()
+
+applyFit()
 
 MiniBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = true
